@@ -3,6 +3,5 @@
 .vscode/
 data/
 lib/
-models/
 .*
 !/.gitignore
