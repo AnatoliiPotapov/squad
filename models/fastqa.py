@@ -22,7 +22,7 @@ from layers import SharedWeight
 class FastQA(Model):
     def __init__(self, inputs=None, outputs=None,
                        N=None, M=None, unroll=False,
-                       hdim=300, word2vec_dim=300,
+                       hdim=300, word2vec_dim=300, dropout_rate=0.2,
                        **kwargs):
         # Load model from config
         if inputs is not None and outputs is not None:
@@ -142,4 +142,4 @@ class FastQA(Model):
                                    **kwargs)
 
 if __name__ == "__main__":
-    model = FastQA(hdim=300, N=300, M=30)
+    model = FastQA(hdim=300, N=300, M=30, dropout_rate=0.2)
