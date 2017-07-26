@@ -8,7 +8,7 @@ import argparse
 import keras
 from keras.callbacks import ModelCheckpoint
 
-from model import RNet
+from models import RNet, FastQA
 from data import BatchGen, load_dataset
 
 import sys
@@ -17,11 +17,12 @@ sys.setrecursionlimit(100000)
 np.random.seed(10)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--hdim', default=75, help='Model to evaluate', type=int)
-parser.add_argument('--batch_size', default=70, help='Batch size', type=int)
+parser.add_argument('--model', default='fastqa', help='Model to evaluate', type=str)
+parser.add_argument('--hdim', default=300, help='Model to evaluate', type=int)
+parser.add_argument('--batch_size', default=64, help='Batch size', type=int)
 parser.add_argument('--nb_epochs', default=50, help='Number of Epochs', type=int)
-parser.add_argument('--optimizer', default='Adadelta', help='Optimizer', type=str)
-parser.add_argument('--lr', default=None, help='Learning rate', type=float)
+parser.add_argument('--optimizer', default='Adam', help='Optimizer', type=str)
+parser.add_argument('--lr', default=0.001, help='Learning rate', type=float)
 parser.add_argument('--name', default='', help='Model dump name prefix', type=str)
 parser.add_argument('--loss', default='categorical_crossentropy', help='Loss', type=str)
 
@@ -34,7 +35,7 @@ parser.add_argument('--valid_data', default='data/valid_data.pkl', help='Validat
 args = parser.parse_args()
 
 print('Creating the model...', end='')
-model = RNet(hdim=args.hdim, dropout_rate=args.dropout, N=300, M=30)
+model = FastQA(hdim=args.hdim, dropout_rate=args.dropout, N=300, M=30)
 print('Done!')
 
 print('Compiling Keras model...', end='')
@@ -57,7 +58,8 @@ print('Done!')
 
 print('Training...', end='')
 
-path = 'models/' + args.name + '{epoch}-t{loss}-v{val_loss}.model'
+path = 'checkpoints/' + args.name + '{epoch}-t{loss}-v{val_loss}.model'
+
 
 model.fit_generator(generator=train_data_gen,
                     steps_per_epoch=train_data_gen.steps(),
