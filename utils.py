@@ -5,10 +5,10 @@ from __future__ import division
 from os import path
 from keras.utils.data_utils import get_file
 
-def custom_objects():
-    from layers import *
-    from model import *
-    return locals()
+#def custom_objects():
+#    from layers import *
+#    from model import *
+#    return locals()
 
 def CoreNLP_path():
     SERVER = 'http://nlp.stanford.edu/software/'

@@ -5,7 +5,7 @@ from __future__ import division
 import numpy as np
 import json
 import argparse
-import cPickle as pickle
+import _pickle as pickle
 
 from os import path
 from tqdm import tqdm
@@ -16,7 +16,7 @@ from gensim.models import KeyedVectors
 
 def CoreNLP_tokenizer():
     proc = CoreNLP(configdict={'annotators': 'tokenize,ssplit'},
-                   corenlp_jars=[path.join(CoreNLP_path(), '*')])
+                   corenlp_jars=['../stanford-corenlp-full-2017-06-09/*'])
 
     def tokenize_context(context):
         parsed = proc.parse_doc(context)
