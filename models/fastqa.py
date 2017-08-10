@@ -12,13 +12,6 @@ from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.layers.recurrent import GRU, LSTM
 from keras.layers.pooling import GlobalMaxPooling1D
 
-from layers import QuestionAttnGRU
-from layers import SelfAttnGRU
-from layers import PointerGRU
-from layers import QuestionPooling
-from layers import Slice
-from layers import SharedWeight
-
 class FastQA(Model):
     def __init__(self, inputs=None, outputs=None,
                        N=None, M=None, unroll=False,

@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 
 import numpy as np
-import cPickle as pickle
+import _pickle as pickle
 
 from keras import backend as K
 from keras.utils import np_utils
@@ -14,7 +14,7 @@ import itertools
 
 def load_dataset(filename):
     with open(filename, 'rb') as f:
-        return pickle.load(f)
+        return pickle.load(f, encoding='iso-8859-1')
 
 def padded_batch_input(input, indices=None, dtype=K.floatx(), maxlen=None):
     if indices is None:
@@ -108,7 +108,7 @@ class BatchGen(object):
                 for k, v in self.groups.items():
                     np.random.shuffle(v)
 
-                tmp = np.concatenate(self.groups.values())
+                tmp = np.concatenate(list(self.groups.values()))
                 batches = np.array_split(tmp, self._steps)
 
                 remainder = []
@@ -173,6 +173,8 @@ class BatchGen(object):
 
     def __next__(self):
         return self.generator.__next__()
+
+
 
     def steps(self):
         if self.sort_by_length is None: 

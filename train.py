@@ -8,7 +8,7 @@ import argparse
 import keras
 from keras.callbacks import ModelCheckpoint
 
-from models import RNet, FastQA
+from models.fastqa import FastQA
 from data import BatchGen, load_dataset
 
 import sys
