@@ -11,21 +11,27 @@ from os import path
 from tqdm import tqdm
 
 from utils import CoreNLP_path
-from stanford_corenlp_pywrapper import CoreNLP
+#from stanford_corenlp_pywrapper import CoreNLP
 from gensim.models import KeyedVectors
 
+from stanfordcorenlp import StanfordCoreNLP
+
 def CoreNLP_tokenizer():
-    proc = CoreNLP(configdict={'annotators': 'tokenize,ssplit'},
-                   corenlp_jars=['../stanford-corenlp-full-2017-06-09/*'])
+    proc = StanfordCoreNLP('/home/anatoly/stanford-corenlp-full-2017-06-09')
 
     def tokenize_context(context):
-        parsed = proc.parse_doc(context)
+
+        props = {'annotators': 'tokenize, ssplit', 'pipelineLanguage': 'en'}
+        data = json.loads(proc.annotate(context, properties=props), strict=False)
+
         tokens = []
         char_offsets = []
-        for sentence in parsed['sentences']:
-            tokens += sentence['tokens']
-            char_offsets += sentence['char_offsets']
-        
+
+        for sentence in data['sentences']:
+            for token in sentence['tokens']:
+                tokens.append(token['word'])
+                char_offsets.append([token['characterOffsetBegin'], token['characterOffsetEnd']])
+
         return tokens, char_offsets
 
     return tokenize_context
