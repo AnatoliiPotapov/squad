@@ -108,5 +108,5 @@ if __name__ == '__main__':
 
     print('Writing to file {}... '.format(args.outfile), end='')
     with open(args.outfile, 'wb') as fd:
-        pickle.dump(data, fd, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(data, fd)
     print('Done!')
