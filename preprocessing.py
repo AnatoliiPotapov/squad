@@ -4,6 +4,7 @@ from __future__ import division
 
 import numpy as np
 import json
+import time
 import argparse
 import _pickle as pickle
 
@@ -13,11 +14,26 @@ from tqdm import tqdm
 from utils import CoreNLP_path
 #from stanford_corenlp_pywrapper import CoreNLP
 from gensim.models import KeyedVectors
+#from stanfordcorenlp import StanfordCoreNLP
+from tokenizer import CoreNLPTokenizer
+import multiprocessing
+from multiprocessing import Pool
+from multiprocessing.util import Finalize
+from functools import partial
 
-from stanfordcorenlp import StanfordCoreNLP
+# ------------------------------------------------------------------------------
+# Tokenize + annotate.
+# ------------------------------------------------------------------------------
 
-def CoreNLP_tokenizer():
-    proc = StanfordCoreNLP('/home/anatoly/stanford-corenlp-full-2017-06-09')
+TOK = None
+
+def init(tokenizer_class, options):
+    global TOK
+    TOK = tokenizer_class()
+
+proc = StanfordCoreNLP('/home/anatoly/stanford-corenlp-full-2017-06-09')
+
+def CoreNLP_tokenizer(proc):
 
     def tokenize_context(context):
 
@@ -32,7 +48,7 @@ def CoreNLP_tokenizer():
                 tokens.append(token['word'])
                 char_offsets.append([token['characterOffsetBegin'], token['characterOffsetEnd']])
 
-        return tokens, char_offsets
+        return [tokens, char_offsets]
 
     return tokenize_context
 
@@ -65,16 +81,46 @@ if __name__ == '__main__':
         samples = json.load(fd)
     print('Done!')
 
-    print('Initiating CoreNLP service connection... ', end='')
-    tokenize = CoreNLP_tokenizer()
+
+    print('Tokenizing dataset with CoreNLP using pool of workers')
+    try:
+        cpus = multiprocessing.cpu_count()
+    except NotImplementedError:
+        cpus = 2  # arbitrary default
+
+
+    def chunks(l, n):
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
+
+    class Tokenizer(object):
+        def __init__(self, cpus):
+            self.cpus = cpus
+
+        def worker(self, arr):
+            t = CoreNLPTokenizer(classpath='/home/anatoly/stanford-corenlp-full-2017-06-09/*')
+            return [t.tokenize(sample) for sample in arr]
+
+        def tokenize(self, arr):
+            chunked = chunks(arr, round(len(arr) / self.cpus))
+            p = Pool(self.cpus)
+            nested_list = p.map(self.worker, chunked)
+            return [val for sublist in nested_list for val in sublist]
+
+
+    t = Tokenizer(cpus)
+    context_tokens = t.tokenize([sample['context'] for sample in samples])
+    question_tokens = t.tokenize([sample['question'] for sample in samples])
     print('Done!')
 
     print('Reading word2vec data... ', end='')
     word_vector = word2vec(args.word2vec_path)
     print('Done!')
 
-    def parse_sample(context, question, answer_start, answer_end, **kwargs):
-        tokens, char_offsets = tokenize(context)
+
+    def parse_sample(context_t, question_t, context, question, answer_start, answer_end, **kwargs):
+        tokens, char_offsets = context_t
         try:
             answer_start = [answer_start >= s and answer_start < e
                             for s, e in char_offsets].index(True)
@@ -86,14 +132,14 @@ if __name__ == '__main__':
         context_vecs = [word_vector(token) for token in tokens]
         context_vecs = np.vstack(context_vecs).astype(np.float32)
 
-        tokens, char_offsets = tokenize(question)
+        tokens, char_offsets = question_t
         question_vecs = [word_vector(token) for token in tokens]
         question_vecs = np.vstack(question_vecs).astype(np.float32)
         return [[context_vecs, question_vecs],
                 [answer_start, answer_end]]
 
     print('Parsing samples... ', end='')
-    samples = [parse_sample(**sample) for sample in tqdm(samples)]
+    samples = [parse_sample(context_tokens[i], question_tokens[i], **sample) for i, sample in tqdm(enumerate(samples))]
     samples = [sample for sample in samples if sample is not None]
     print('Done!')
 
@@ -110,3 +156,5 @@ if __name__ == '__main__':
     with open(args.outfile, 'wb') as fd:
         pickle.dump(data, fd)
     print('Done!')
+    
+
