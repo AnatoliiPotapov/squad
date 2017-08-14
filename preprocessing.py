@@ -25,33 +25,6 @@ from functools import partial
 # Tokenize + annotate.
 # ------------------------------------------------------------------------------
 
-TOK = None
-
-def init(tokenizer_class, options):
-    global TOK
-    TOK = tokenizer_class()
-
-proc = StanfordCoreNLP('/home/anatoly/stanford-corenlp-full-2017-06-09')
-
-def CoreNLP_tokenizer(proc):
-
-    def tokenize_context(context):
-
-        props = {'annotators': 'tokenize, ssplit', 'pipelineLanguage': 'en'}
-        data = json.loads(proc.annotate(context, properties=props), strict=False)
-
-        tokens = []
-        char_offsets = []
-
-        for sentence in data['sentences']:
-            for token in sentence['tokens']:
-                tokens.append(token['word'])
-                char_offsets.append([token['characterOffsetBegin'], token['characterOffsetEnd']])
-
-        return [tokens, char_offsets]
-
-    return tokenize_context
-
 def word2vec(word2vec_path):
     model = KeyedVectors.load_word2vec_format(word2vec_path)
 
