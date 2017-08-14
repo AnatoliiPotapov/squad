@@ -9,7 +9,7 @@ import keras
 from keras.callbacks import ModelCheckpoint
 
 from models.fastqa import FastQA
-from data import BatchGen, load_dataset
+from preprocessing.batch_generator import BatchGen, load_dataset
 
 import sys
 sys.setrecursionlimit(100000)

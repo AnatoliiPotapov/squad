@@ -1,25 +1,20 @@
 # from __future__ import absolute_import
-from __future__ import print_function
 from __future__ import division
+from __future__ import print_function
 
-import numpy as np
-import json
-import time
-import argparse
 import _pickle as pickle
-
-from os import path
-from tqdm import tqdm
-
-from utils import CoreNLP_path
-#from stanford_corenlp_pywrapper import CoreNLP
-from gensim.models import KeyedVectors
-#from stanfordcorenlp import StanfordCoreNLP
-from tokenizer import CoreNLPTokenizer
+import argparse
+import json
 import multiprocessing
 from multiprocessing import Pool
-from multiprocessing.util import Finalize
-from functools import partial
+
+import numpy as np
+from gensim.models import KeyedVectors
+from tqdm import tqdm
+
+# from stanfordcorenlp import StanfordCoreNLP
+from preprocessing.tokenizer import CoreNLPTokenizer
+
 
 # ------------------------------------------------------------------------------
 # Tokenize + annotate.

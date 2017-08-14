@@ -13,6 +13,7 @@ from random import shuffle
 import itertools
 
 def load_dataset(filename):
+    print(filename)
     with open(filename, 'rb') as f:
         return pickle.load(f, encoding='iso-8859-1')
 
