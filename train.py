@@ -7,7 +7,7 @@ import argparse
 
 import keras
 from keras.callbacks import ModelCheckpoint
-
+from keras.callbacks import Callback
 from models.fastqa import FastQA
 from preprocessing.batch_generator import BatchGen, load_dataset
 
@@ -60,6 +60,17 @@ print('Training...', end='')
 
 path = 'checkpoints/' + args.name + '{epoch}-t{loss}-v{val_loss}.model'
 
+class NBatchLogger(Callback):
+    def __init__(self, display):
+        self.seen = 0
+        self.display = display
+
+    def on_batch_end(self, batch, logs={}):
+        self.seen += logs.get('size', 0)
+        if self.seen % self.display == 0:
+            # you can access loss, accuracy in self.params['metrics']
+            print(logs)
+
 
 model.fit_generator(generator=train_data_gen,
                     steps_per_epoch=train_data_gen.steps(),
@@ -68,5 +79,6 @@ model.fit_generator(generator=train_data_gen,
                     epochs=args.nb_epochs,
                     callbacks=[
                         ModelCheckpoint(path, verbose=1, save_best_only=True)
+                        NBatchLogger(10)
                     ])
 print('Done!')
