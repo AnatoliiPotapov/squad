@@ -4,6 +4,7 @@ from __future__ import division
 
 import numpy as np
 import argparse
+import requests
 
 import keras
 from keras.callbacks import ModelCheckpoint
@@ -71,6 +72,27 @@ class NBatchLogger(Callback):
             # you can access loss, accuracy in self.params['metrics']
             print(logs)
 
+class PastalogLogger(Callback):
+    def __init__(self, display, service_ip, model_name = 'FastQa', log = 'acc'):
+        self.seen = 0
+        self.display = display
+        self.ip = service_ip
+        self.model_name = model_name
+        self.log = log
+
+    def on_batch_end(self, batch, logs={}):
+        self.seen += logs.get('size', 0)
+        if self.seen % self.display == 0:
+            payload = {"modelName": self.model_name,
+                       "pointType": self.log,
+                       "pointValue": logs[self.log],
+                       "globalStep": self.display}
+
+            r = requests.post(self.url, json=payload)
+
+
+
+
 
 model.fit_generator(generator=train_data_gen,
                     steps_per_epoch=train_data_gen.steps(),
@@ -78,7 +100,8 @@ model.fit_generator(generator=train_data_gen,
                     validation_steps=valid_data_gen.steps(),
                     epochs=args.nb_epochs,
                     callbacks=[
-                        ModelCheckpoint(path, verbose=1, save_best_only=True)
-                        NBatchLogger(10)
+                        ModelCheckpoint(path, verbose=1, save_best_only=True),
+                        NBatchLogger(10),
+                        PastalogLogger(10, 'http://34.232.73.156:8120/', log='loss')
                     ])
 print('Done!')
