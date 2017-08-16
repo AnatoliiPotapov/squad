@@ -81,21 +81,22 @@ def OffitialEvaluator(object):
         pass
 
 class PastalogLogger(Callback):
-    def __init__(self, display, service_ip, model_name = 'FastQa', log = 'acc'):
+    def __init__(self, display, model_name = 'FastQa', log = 'acc'):
         self.seen = 0
         self.display = display
-        self.ip = service_ip
         self.model_name = model_name
         self.log = log
-
+        self.url = 'http://ipavlov.anatolypotapov.com'
+        self.batch_num = 0
     def on_batch_end(self, batch, logs={}):
         self.seen += logs.get('size', 0)
         if self.seen % self.display == 0:
             payload = {"modelName": self.model_name,
                        "pointType": self.log,
                        "pointValue": logs[self.log],
-                       "globalStep": self.display}
+                       "globalStep": self.batch_num}
 
+            self.batch_num+=1
             r = requests.post(self.url, json=payload)
 
     def on_epoch_end(self, epoch, logs=None):
