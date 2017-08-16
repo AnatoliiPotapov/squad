@@ -227,13 +227,7 @@ class Preprocessor(object):
 
     def preprocess(self, samples):
 
-        if len(samples) < 100:
-            return [self.worker(samples)]
-        else:
-            chunked = chunks(samples, round(len(samples) / self.cpus))
-        p = Pool(self.cpus)
-        nested_list = p.map(self.worker, chunked)
-        samples = [val for sublist in nested_list for val in sublist]
+        samples = [self.worker(samples)]
 
         # Transpose
         data = [[[], []],
