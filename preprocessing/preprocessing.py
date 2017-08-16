@@ -223,7 +223,7 @@ class Preprocessor(object):
 
     def worker(self, arr):
         vectorizer = Vectorizer(feature_dict=FeatureDict(), w2v_path=self.w2v_path, extra=True, use=self.use, use_qc=self.use_qc)
-        return [vectorizer.to_vector(sample) for sample in arr]
+        return [vectorizer.to_vector(sample) for sample in tqdm(arr)]
 
     def preprocess(self, samples):
 
