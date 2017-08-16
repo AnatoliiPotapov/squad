@@ -215,7 +215,7 @@ def chunks(l, n):
 class Preprocessor(object):
 
     def __init__(self, w2v_path, use, use_qc, cpus=4, need_answers=True):
-        self.vectorizer = Vectorizer(FeatureDict(), w2v_path, extra = True, use=use, use_qc = use_qc)
+        self.vectorizer = Vectorizer(feature_dict=FeatureDict(), w2v_path=w2v_path, extra = True, use=use, use_qc = use_qc)
         self.cpus = cpus
 
     def worker(self, arr):
@@ -269,7 +269,8 @@ if __name__ == '__main__':
         cpus = 2  # arbitrary default
 
     print('Processing SQuAD data... ', end='')
-    data = Preprocessor(samples, args.word2vec_path, cpus=cpus, use=args.use, use_qc=(True, True))
+    prepro = Preprocessor(w2v_path=args.word2vec_path, cpus=cpus, use=args.use, use_qc=(True, True))
+    data = prepro.preprocess(samples)
     print('Done!')
 
     print('Writing to file {}... '.format(args.outfile), end='')
