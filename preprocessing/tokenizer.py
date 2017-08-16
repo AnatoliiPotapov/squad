@@ -28,7 +28,7 @@ class Tokenizer(object):
         return [t.tokenize(sample) for sample in arr]
 
     def tokenize(self, arr):
-        if len(arr) < 10000:
+        if len(arr) < 1000:
             return [self.worker(arr)]
         else:
             chunked = chunks(arr, round(len(arr) / self.cpus))
