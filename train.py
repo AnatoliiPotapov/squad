@@ -61,6 +61,7 @@ print('Training...', end='')
 
 path = 'checkpoints/' + args.name + '{epoch}-t{loss}-v{val_loss}.model'
 
+
 class NBatchLogger(Callback):
     def __init__(self, display):
         self.seen = 0
@@ -71,6 +72,11 @@ class NBatchLogger(Callback):
         if self.seen % self.display == 0:
             # you can access loss, accuracy in self.params['metrics']
             print(logs)
+
+
+def OffitialEvaluator(object):
+    def __init__(self):
+        pass
 
 class PastalogLogger(Callback):
     def __init__(self, display, service_ip, model_name = 'FastQa', log = 'acc'):
@@ -89,6 +95,9 @@ class PastalogLogger(Callback):
                        "globalStep": self.display}
 
             r = requests.post(self.url, json=payload)
+
+    def on_epoch_end(self, epoch, logs=None):
+        pass
 
 
 

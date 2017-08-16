@@ -4,13 +4,39 @@
 Serves commands to a java subprocess running the jar. Requires java 8.
 """
 
+import os
 import copy
 import json
 import pexpect
+import argparse
+import multiprocessing
+from multiprocessing import Pool
 
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+class Tokenizer(object):
+    def __init__(self, cpus, annotators, corenlp_classpath):
+        self.cpus = cpus
+        self.annotations = annotators
+        self.classpath = corenlp_classpath
+
+    def worker(self, arr):
+        t = CoreNLPTokenizer(classpath=self.classpath, annotators=self.annotations)
+        return [t.tokenize(sample) for sample in arr]
+
+    def tokenize(self, arr):
+        if len(arr) < 10000:
+            return [self.worker(arr)]
+        else:
+            chunked = chunks(arr, round(len(arr) / self.cpus))
+        p = Pool(self.cpus)
+        nested_list = p.map(self.worker, chunked)
+        return [val for sublist in nested_list for val in sublist]
 
 class CoreNLPTokenizer(object):
-
     def __init__(self, **kwargs):
         """
         Args:
@@ -114,7 +140,59 @@ class CoreNLPTokenizer(object):
                 tokens[i].get('ner', None)
             ))
 
-            token_arr.append(self._convert(tokens[i]['word']))
-            offset_arr.append([tokens[i]['characterOffsetBegin'],
-                 tokens[i]['characterOffsetEnd']])
-        return token_arr, offset_arr
+
+        return data
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--annotators', default='', help='List of annotators for CoreNLP', type=str)
+    parser.add_argument('--load_data', default=None, help='Load data from .json file', type=str)
+    parser.add_argument('--outfile', default=None, help='Path to save .json file', type=str)
+    args = parser.parse_args()
+
+    try:
+        cpus = multiprocessing.cpu_count()
+    except NotImplementedError:
+        cpus = 2  # arbitrary default
+
+    try:
+        corenlp_path = os.environ["CORENLP_CLASSPATH"]
+    except KeyError:
+        print("$CORENLP_CLASSPATH not found, using default.")
+        corenlp_path = '/home/anatoly/stanford-corenlp-full-2017-06-09/*'
+
+    try:
+        with open(args.load_data) as fd:
+            test_data = json.load(fd)
+    except:
+        print('Using example data')
+        test_data = [{
+            'id':1,
+            'question': 'How are U?',
+            'answer':   'Well',
+            'answer_start': 2,
+            'answer_end':   3,
+            'context': 'I am always well.',
+            'topic': 'general'}]
+
+    questions = [sample['question'] for sample in test_data]
+    contexts = [sample['context'] for sample in test_data]
+
+    t = Tokenizer(cpus, annotators=args.annotators, corenlp_classpath=corenlp_path)
+
+    tokenized_questions = t.tokenize(questions)
+    tokenized_contexts = t.tokenize(contexts)
+
+    for i, sample in enumerate(test_data):
+        sample['question_tokens'] = tokenized_questions[i]
+        sample['context_tokens'] = tokenized_questions[i]
+
+    if not args.outfile==None:
+        with open(args.outfile, 'w') as fd:
+            json.dump(test_data, fd)
+    else:
+        print(test_data)
+
+
+

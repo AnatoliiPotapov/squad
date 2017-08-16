@@ -5,16 +5,13 @@ from __future__ import print_function
 import _pickle as pickle
 import argparse
 import json
+from collections import Counter
 import multiprocessing
 from multiprocessing import Pool
 
 import numpy as np
 from gensim.models import KeyedVectors
 from tqdm import tqdm
-
-# from stanfordcorenlp import StanfordCoreNLP
-from preprocessing.tokenizer import CoreNLPTokenizer
-
 
 # ------------------------------------------------------------------------------
 # Tokenize + annotate.
@@ -31,14 +28,229 @@ def word2vec(word2vec_path):
 
     return get_word_vector
 
+
+class FeatureDict(object):
+
+    def __init__(self):
+        try:
+            self.feature_dict = self.load()
+        except:
+            self.feature_dict = {}
+
+    def add_data(self, data):
+        for example in data:
+            for token in example['question_tokens']+example['context_tokens']:
+                if not (token[3] == None): self.add_feature('pos='+token[3])
+                #if not (token[4] == None): self.add_feature(token[4])  # To many lemma features
+                if not (token[5] == None): self.add_feature('ner='+token[5])
+
+    def add_feature(self, feature):
+        if not self.feature_dict.get(feature):
+            self.feature_dict[feature] = len(self.feature_dict)
+
+    def _to_id(self, feature):
+        return self.feature_dict[feature]
+
+    def save(self):
+        with open('../data/feature_dict.pkl', 'wb') as fd:
+            pickle.dump(self.dict, fd)
+
+    def load(self):
+        with open('../data/feature_dict.pkl', 'rb') as f:
+            self.dict = pickle.load(f, encoding='iso-8859-1')
+
+    def renumerate(self):
+        keys = list(self.dict.keys())
+        self.dict = {}
+        for key in keys: self.dict[key] = len(self.dict)
+
+class Vectorizer(object):
+
+    def __init__(self, feature_dict, w2v_path, extra = True, use='pos, ner, wiq, tf, is_question', use_qc = (True, False)):
+        self.word_vector = word2vec(w2v_path)
+        self.dict = FeatureDict()
+        self.use = use
+        self.extra = extra
+        self.use_qc = use_qc
+
+        keys = list(self.dict.feature_dict.keys())
+
+        if not 'pos' in use:
+            for key in keys:
+                if 'pos' in key:
+                    self.dict.feature_dict.pop(key, None)
+
+        if not 'ner' in use:
+            for key in keys:
+                if 'ner' in key:
+                    self.dict.feature_dict.pop(key, None)
+
+        self.dict.renumerate()
+
+        if 'tf' in use:
+            self.dict.add_feature('tf')
+            self.dict.add_feature('tf_rev')
+
+        if 'wiq' in use:
+            self.dict.add_feature('in_question')
+            self.dict.add_feature('in_question_uncased')
+            self.dict.add_feature('in_question_lemma')
+
+
+    def extra_features(self, sample):
+
+        context_features = np.zeros(len(sample['context_tokens']), len(self.dict.feature_dict))
+        question_features = np.zeros(len(sample['question_tokens']), len(self.dict.feature_dict))
+
+        def wiq(features, question=False):
+
+            if not question:
+                q_words_cased = {w for w in sample['question']}
+                q_words_uncased = {w.lower() for w in sample['question']}
+                q_lemma = {w[4] for w in sample['question_tokens']} if 'lemma' in self.use else None
+
+                for i in range(len(sample['context_tokens'])):
+                    if sample['context_tokens'][i][0] in q_words_cased:
+                        features[i][self.dict.feature_dict['in_question']] = 1.0
+                    if sample['context_tokens'][i][0].lower() in q_words_uncased:
+                        features[i][self.dict.feature_dict['in_question_uncased']] = 1.0
+                    if q_lemma and sample['context_tokens'][i] in q_lemma:
+                        features[i][self.dict.feature_dict['in_question_lemma']] = 1.0
+
+        def pos(features, question=False):
+            tokens = 'context_tokens'
+            if question:
+                tokens = 'question_tokens'
+            for i, w in enumerate(sample[tokens]):
+                f = 'pos=%s' % w[3]
+                if f in self.dict.feature_dict:
+                    features[i][self.dict.feature_dict[f]] = 1.0
+
+        def ner(features, question=False):
+            tokens = 'context_tokens'
+            if question:
+                tokens = 'question_tokens'
+            for i, w in enumerate(sample[tokens]):
+                f = 'pos=%s' % w[5]
+                if f in self.dict.feature_dict:
+                    features[i][self.dict.feature_dict[f]] = 1.0
+
+        def tf(features, question=False):
+            tokens = 'context_tokens'
+            if question:
+                tokens = 'question_tokens'
+            counter = Counter([w[0].lower() for w in sample[tokens]])
+            l = len(sample[tokens])
+            for i, w in enumerate(sample[tokens]):
+                features[i][self.dict.feature_dict['tf']] = counter[w[0].lower()] * 1.0 / l
+                features[i][self.dict.feature_dict['tf_rev']] = l / (counter[w[0].lower()] + 1.0)
+
+        if self.use_qc[0]:
+            if 'pos' in self.use:
+                pos(context_features)
+            if 'ner' in self.use:
+                ner(context_features)
+            if 'tf' in self.use:
+                ner(context_features)
+            if 'wiq' in self.use:
+                wiq(context_features)
+        else:
+            context_features = None
+
+        if self.use_qc[1]:
+            if 'pos' in self.use:
+                pos(question_features, True)
+            if 'ner' in self.use:
+                ner(question_features, True)
+            if 'tf' in self.use:
+                ner(question_features, True)
+            if 'wiq' in self.use:
+                wiq(question_features, True)
+        else:
+            question_features = None
+
+
+        return [context_features, question_features]
+
+    def to_vector(self, sample, need_answer = True):
+
+        context_vecs = [self.word_vector(token[0]) for token in sample['context_tokens']]
+        context_vecs = np.vstack(context_vecs).astype(np.float32)
+
+        question_vecs = [self.word_vector(token[0]) for token in sample['question_tokens']]
+        question_vecs = np.vstack(question_vecs).astype(np.float32)
+
+
+        if self.extra:
+            context_extra, question_exta = self.extra_features(sample)
+        if self.use_qc[0]:
+            context_vecs = np.hstack(context_vecs, context_extra)
+        if self.use_qc[1]:
+            question_vecs = np.hstack(question_vecs, question_exta)
+
+        if need_answer:
+
+            context_char_offsets = [token[2] for token in sample['context_tokens']]
+
+            try:
+                answer_start, answer_end = sample['answer_start'], sample['answer_end']
+
+                answer_start = [answer_start >= s and answer_start < e
+                                for s, e in context_char_offsets].index(True)
+                answer_end = [answer_end >= s and answer_end < e
+                              for s, e in context_char_offsets].index(True)
+            except ValueError:
+                return None
+
+            return [[context_vecs, question_vecs], [answer_start, answer_end]]
+
+        else:
+            return [context_vecs, question_vecs]
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+class Preprocessor(object):
+
+    def __init__(self, w2v_path, use, cpus=4, need_answers=True):
+        self.vectorizer = Vectorizer(FeatureDict(), w2v_path, use)
+        self.cpus = cpus
+
+    def worker(self, arr):
+        return [self.vectorizer.to_vector(sample) for sample in arr]
+
+    def preprocess(self, samples):
+
+        if len(samples) < 10000:
+            return [self.worker(samples)]
+        else:
+            chunked = chunks(samples, round(len(samples) / self.cpus))
+        p = Pool(self.cpus)
+        nested_list = p.map(self.worker, chunked)
+        samples = [val for sublist in nested_list for val in sublist]
+
+        # Transpose
+        data = [[[], []],
+                [[], []]]
+
+        for sample in samples[0]:
+            data[0][0].append(sample[0][0])
+            data[0][1].append(sample[0][1])
+            data[1][0].append(sample[1][0])
+            data[1][1].append(sample[1][1])
+
+        return data
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--word2vec_path', type=str, 
+    parser.add_argument('--word2vec_path', type=str,
                         default='data/word2vec_from_glove_300.vec',
                         help='Word2Vec vectors file path')
     parser.add_argument('--outfile', type=str, default='data/tmp.pkl',
                         help='Desired path to output pickle')
-    parser.add_argument('data', type=str, help='Data json')
+    parser.add_argument('--data', type=str, help='Data json')
     args = parser.parse_args()
 
     if not args.outfile.endswith('.pkl'):
@@ -49,80 +261,20 @@ if __name__ == '__main__':
         samples = json.load(fd)
     print('Done!')
 
-
-    print('Tokenizing dataset with CoreNLP using pool of workers')
     try:
         cpus = multiprocessing.cpu_count()
     except NotImplementedError:
         cpus = 2  # arbitrary default
 
-
-    def chunks(l, n):
-        """Yield successive n-sized chunks from l."""
-        for i in range(0, len(l), n):
-            yield l[i:i + n]
-
-    class Tokenizer(object):
-        def __init__(self, cpus):
-            self.cpus = cpus
-
-        def worker(self, arr):
-            t = CoreNLPTokenizer(classpath='/home/anatoly/stanford-corenlp-full-2017-06-09/*')
-            return [t.tokenize(sample) for sample in arr]
-
-        def tokenize(self, arr):
-            chunked = chunks(arr, round(len(arr) / self.cpus))
-            p = Pool(self.cpus)
-            nested_list = p.map(self.worker, chunked)
-            return [val for sublist in nested_list for val in sublist]
-
-
-    t = Tokenizer(cpus)
-    context_tokens = t.tokenize([sample['context'] for sample in samples])
-    question_tokens = t.tokenize([sample['question'] for sample in samples])
+    print('Processing SQuAD data... ', end='')
+    data = Preprocessor(samples, args.word2vec_path, cpus=cpus)
     print('Done!')
-
-    print('Reading word2vec data... ', end='')
-    word_vector = word2vec(args.word2vec_path)
-    print('Done!')
-
-
-    def parse_sample(context_t, question_t, context, question, answer_start, answer_end, **kwargs):
-        tokens, char_offsets = context_t
-        try:
-            answer_start = [answer_start >= s and answer_start < e
-                            for s, e in char_offsets].index(True)
-            answer_end   = [answer_end   >= s and answer_end   < e
-                            for s, e in char_offsets].index(True)
-        except ValueError:
-            return None
-
-        context_vecs = [word_vector(token) for token in tokens]
-        context_vecs = np.vstack(context_vecs).astype(np.float32)
-
-        tokens, char_offsets = question_t
-        question_vecs = [word_vector(token) for token in tokens]
-        question_vecs = np.vstack(question_vecs).astype(np.float32)
-        return [[context_vecs, question_vecs],
-                [answer_start, answer_end]]
-
-    print('Parsing samples... ', end='')
-    samples = [parse_sample(context_tokens[i], question_tokens[i], **sample) for i, sample in tqdm(enumerate(samples))]
-    samples = [sample for sample in samples if sample is not None]
-    print('Done!')
-
-    # Transpose
-    data = [[[], []], 
-            [[], []]]
-    for sample in samples:
-        data[0][0].append(sample[0][0])
-        data[0][1].append(sample[0][1])
-        data[1][0].append(sample[1][0])
-        data[1][1].append(sample[1][1])
 
     print('Writing to file {}... '.format(args.outfile), end='')
     with open(args.outfile, 'wb') as fd:
         pickle.dump(data, fd)
     print('Done!')
-    
+
+
+
 
