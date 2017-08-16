@@ -215,7 +215,7 @@ def chunks(l, n):
 class Preprocessor(object):
 
     def __init__(self, w2v_path, use, use_qc, cpus=4, need_answers=True):
-        self.vectorizer = Vectorizer(FeatureDict(), w2v_path, extra = True, use='pos, ner, wiq, tf', use_qc = (True, False))
+        self.vectorizer = Vectorizer(FeatureDict(), w2v_path, extra = True, use=use, use_qc = use_qc)
         self.cpus = cpus
 
     def worker(self, arr):
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     parser.add_argument('--outfile', type=str, default='data/tmp.pkl',
                         help='Desired path to output pickle')
     parser.add_argument('--data', type=str, help='Data json')
-    parser.add_argument('--use', type=str, default='pos, ner, wiq, tf', help='Which additional features to use')
+    parser.add_argument('--use', default='pos, ner, wiq, tf', help='Which additional features to use', type=str)
 
     args = parser.parse_args()
 
