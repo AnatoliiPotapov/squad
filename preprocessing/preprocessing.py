@@ -33,7 +33,7 @@ class FeatureDict(object):
 
     def __init__(self):
         try:
-            self.feature_dict = self.load()
+            self.load()
         except:
             self.feature_dict = {}
 
