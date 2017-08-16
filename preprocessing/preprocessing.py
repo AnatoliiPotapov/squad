@@ -263,6 +263,12 @@ if __name__ == '__main__':
         samples = json.load(fd)
     print('Done!')
 
+    print('Making feature dict... ', end='')
+    feature_dict = FeatureDict()
+    feature_dict.add_data(samples)
+    feature_dict.save()
+    print('Done!')
+
     try:
         cpus = multiprocessing.cpu_count()
     except NotImplementedError:
