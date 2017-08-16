@@ -214,7 +214,7 @@ def chunks(l, n):
 
 class Preprocessor(object):
 
-    def __init__(self, w2v_path, use, cpus=4, need_answers=True):
+    def __init__(self, w2v_path, use, use_qc, cpus=4, need_answers=True):
         self.vectorizer = Vectorizer(FeatureDict(), w2v_path, extra = True, use='pos, ner, wiq, tf', use_qc = (True, False))
         self.cpus = cpus
 
@@ -251,9 +251,7 @@ if __name__ == '__main__':
     parser.add_argument('--outfile', type=str, default='data/tmp.pkl',
                         help='Desired path to output pickle')
     parser.add_argument('--data', type=str, help='Data json')
-
     parser.add_argument('--use', type=str, default='pos, ner, wiq, tf', help='Which additional features to use')
-    parser.add_argument('--mode', type=str, default='pos, ner, wiq, tf', help='Which additional features to use')
 
     args = parser.parse_args()
 
@@ -271,7 +269,7 @@ if __name__ == '__main__':
         cpus = 2  # arbitrary default
 
     print('Processing SQuAD data... ', end='')
-    data = Preprocessor(samples, args.word2vec_path, cpus=cpus)
+    data = Preprocessor(samples, args.word2vec_path, cpus=cpus, use=args.use, use_qc=(True, True))
     print('Done!')
 
     print('Writing to file {}... '.format(args.outfile), end='')
