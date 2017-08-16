@@ -225,8 +225,13 @@ class Preprocessor(object):
         return [vectorizer.to_vector(sample) for sample in tqdm(arr)]
 
     def preprocess(self, samples):
-
-        samples = [sample for sample in self.worker(samples) if sample is not None]
+        if len(samples) < 100:
+            samples = [sample for sample in self.worker(samples) if sample is not None]
+        else:
+            chunked = chunks(samples, round(len(samples) / self.cpus))
+            p = Pool(self.cpus)
+            nested_list = p.map(self.worker, chunked)
+            samples = [val for sublist in nested_list for val in sublist]
 
         # Transpose
         data = [[[], []],

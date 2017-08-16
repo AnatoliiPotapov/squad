@@ -32,9 +32,9 @@ class Tokenizer(object):
             return [self.worker(arr)]
         else:
             chunked = chunks(arr, round(len(arr) / self.cpus))
-        p = Pool(self.cpus)
-        nested_list = p.map(self.worker, chunked)
-        return [val for sublist in nested_list for val in sublist]
+            p = Pool(self.cpus)
+            nested_list = p.map(self.worker, chunked)
+            return [val for sublist in nested_list for val in sublist]
 
 class CoreNLPTokenizer(object):
     def __init__(self, **kwargs):
