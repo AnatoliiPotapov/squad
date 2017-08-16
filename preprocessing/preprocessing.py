@@ -66,7 +66,7 @@ class FeatureDict(object):
 
 class Vectorizer(object):
 
-    def __init__(self, feature_dict, w2v_path, extra = True, use='pos, ner, wiq, tf, is_question', use_qc = (True, False)):
+    def __init__(self, w2v_path, extra = True, use='pos, ner, wiq, tf, is_question', use_qc = (True, False)):
         self.word_vector = word2vec(w2v_path)
         self.dict = FeatureDict()
         self.use = use
@@ -184,9 +184,9 @@ class Vectorizer(object):
         if self.extra:
             context_extra, question_exta = self.extra_features(sample)
         if self.use_qc[0]:
-            context_vecs = np.hstack(context_vecs, context_extra)
+            context_vecs = np.hstack((context_vecs, context_extra))
         if self.use_qc[1]:
-            question_vecs = np.hstack(question_vecs, question_exta)
+            question_vecs = np.hstack((question_vecs, question_exta))
 
         if need_answer:
 
@@ -215,14 +215,13 @@ def chunks(l, n):
 class Preprocessor(object):
 
     def __init__(self, w2v_path, use, use_qc, cpus=4, need_answers=True):
-        self.vectorizer = Vectorizer(feature_dict=FeatureDict(), w2v_path=w2v_path, extra = True, use=use, use_qc = use_qc)
         self.cpus = cpus
         self.use = use
         self.w2v_path = w2v_path
         self.use_qc = use_qc
 
     def worker(self, arr):
-        vectorizer = Vectorizer(feature_dict=FeatureDict(), w2v_path=self.w2v_path, extra=True, use=self.use, use_qc=self.use_qc)
+        vectorizer = Vectorizer(w2v_path=self.w2v_path, extra=True, use=self.use, use_qc=self.use_qc)
         return [vectorizer.to_vector(sample) for sample in tqdm(arr)]
 
     def preprocess(self, samples):
