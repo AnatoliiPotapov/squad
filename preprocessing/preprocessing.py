@@ -60,7 +60,7 @@ class FeatureDict(object):
             self.feature_dict = pickle.load(f, encoding='iso-8859-1')
 
     def renumerate(self):
-        keys = list(self.dict.keys())
+        keys = list(self.feature_dict.keys())
         self.feature_dictdict = {}
         for key in keys: self.feature_dictdict[key] = len(self.feature_dict)
 
