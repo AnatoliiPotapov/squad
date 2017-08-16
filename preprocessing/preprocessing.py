@@ -99,8 +99,8 @@ class Vectorizer(object):
 
     def extra_features(self, sample):
 
-        context_features = np.zeros(len(sample['context_tokens']), len(self.dict.feature_dict))
-        question_features = np.zeros(len(sample['question_tokens']), len(self.dict.feature_dict))
+        context_features = np.zeros((len(sample['context_tokens']), len(self.dict.feature_dict)))
+        question_features = np.zeros((len(sample['question_tokens']), len(self.dict.feature_dict)))
 
         def wiq(features, question=False):
 
@@ -223,7 +223,7 @@ class Preprocessor(object):
 
     def preprocess(self, samples):
 
-        if len(samples) < 10000:
+        if len(samples) < 100:
             return [self.worker(samples)]
         else:
             chunked = chunks(samples, round(len(samples) / self.cpus))
