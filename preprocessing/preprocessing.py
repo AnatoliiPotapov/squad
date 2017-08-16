@@ -53,7 +53,7 @@ class FeatureDict(object):
 
     def save(self):
         with open('../data/feature_dict.pkl', 'wb') as fd:
-            pickle.dump(self.feature_dictdict, fd)
+            pickle.dump(self.feature_dict, fd)
 
     def load(self):
         with open('../data/feature_dict.pkl', 'rb') as f:
