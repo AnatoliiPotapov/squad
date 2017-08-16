@@ -226,7 +226,7 @@ class Preprocessor(object):
 
     def preprocess(self, samples):
 
-        samples = [self.worker(samples)]
+        samples = [sample for sample in self.worker(samples) if sample is not None]
 
         # Transpose
         data = [[[], []],
