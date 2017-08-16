@@ -12,6 +12,9 @@ from keras.callbacks import Callback
 from models.fastqa import FastQA
 from preprocessing.batch_generator import BatchGen, load_dataset
 
+import json
+from decimal import Decimal
+
 import sys
 sys.setrecursionlimit(100000)
 
@@ -32,13 +35,11 @@ parser.add_argument('--dropout', default=0, type=float)
 parser.add_argument('--train_data', default='data/train_data.pkl', help='Train Set', type=str)
 parser.add_argument('--valid_data', default='data/valid_data.pkl', help='Validation Set', type=str)
 
-parser.add_argument('--dim', default=300, help='Dimensionality of input data', type=int)
-
 # parser.add_argument('model', help='Model to evaluate', type=str)
 args = parser.parse_args()
 
 print('Creating the model...', end='')
-model = FastQA(hdim=args.hdim, dropout_rate=args.dropout, N=300, M=30, word2vec_dim=args.dim)
+model = FastQA(hdim=args.hdim, dropout_rate=args.dropout, N=300, M=30)
 print('Done!')
 
 print('Compiling Keras model...', end='')
@@ -63,7 +64,6 @@ print('Training...', end='')
 
 path = 'checkpoints/' + args.name + '{epoch}-t{loss}-v{val_loss}.model'
 
-
 class NBatchLogger(Callback):
     def __init__(self, display):
         self.seen = 0
@@ -75,19 +75,13 @@ class NBatchLogger(Callback):
             # you can access loss, accuracy in self.params['metrics']
             print(logs)
 
-
-def OffitialEvaluator(object):
-    def __init__(self):
-        pass
-
 class PastalogLogger(Callback):
-    def __init__(self, display, model_name = 'FastQa', log = 'acc'):
+    def __init__(self, display, service_ip, model_name = 'FastQa', log = 'acc'):
         self.seen = 0
         self.display = display
+        self.url = service_ip
         self.model_name = model_name
         self.log = log
-        self.url = 'http://ipavlov.anatolypotapov.com'
-        self.batch_num = 0
 
     def on_batch_end(self, batch, logs={}):
         self.seen += logs.get('size', 0)
@@ -95,13 +89,9 @@ class PastalogLogger(Callback):
             payload = {"modelName": self.model_name,
                        "pointType": self.log,
                        "pointValue": float(logs[self.log]),
-                       "globalStep": self.batch_num}
+                       "globalStep": self.display}
 
-            self.batch_num+=1
             r = requests.post(self.url, json=payload)
-
-    def on_epoch_end(self, epoch, logs=None):
-        pass
 
 
 
@@ -115,6 +105,6 @@ model.fit_generator(generator=train_data_gen,
                     callbacks=[
                         ModelCheckpoint(path, verbose=1, save_best_only=True),
                         NBatchLogger(10),
-                        PastalogLogger(10, 'http://34.232.73.156:8120/', log='loss')
+                        PastalogLogger(10, 'http://34.232.73.156:8120/data/', log='loss')
                     ])
 print('Done!')
