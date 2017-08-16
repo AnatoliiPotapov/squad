@@ -232,7 +232,7 @@ class Preprocessor(object):
         data = [[[], []],
                 [[], []]]
 
-        for sample in samples[0]:
+        for sample in samples:
             data[0][0].append(sample[0][0])
             data[0][1].append(sample[0][1])
             data[1][0].append(sample[1][0])
