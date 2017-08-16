@@ -61,8 +61,8 @@ class FeatureDict(object):
 
     def renumerate(self):
         keys = list(self.dict.keys())
-        self.dict = {}
-        for key in keys: self.dict[key] = len(self.dict)
+        self.feature_dictdict = {}
+        for key in keys: self.feature_dictdict[key] = len(self.feature_dict)
 
 class Vectorizer(object):
 
@@ -223,7 +223,7 @@ class Preprocessor(object):
 
     def preprocess(self, samples):
 
-        if len(samples) < 1000:
+        if len(samples) < 10000:
             return [self.worker(samples)]
         else:
             chunked = chunks(samples, round(len(samples) / self.cpus))
