@@ -32,11 +32,13 @@ parser.add_argument('--dropout', default=0, type=float)
 parser.add_argument('--train_data', default='data/train_data.pkl', help='Train Set', type=str)
 parser.add_argument('--valid_data', default='data/valid_data.pkl', help='Validation Set', type=str)
 
+parser.add_argument('--dim', default=300, help='Dimensionality of input data', type=int)
+
 # parser.add_argument('model', help='Model to evaluate', type=str)
 args = parser.parse_args()
 
 print('Creating the model...', end='')
-model = FastQA(hdim=args.hdim, dropout_rate=args.dropout, N=300, M=30)
+model = FastQA(hdim=args.hdim, dropout_rate=args.dropout, N=300, M=30, word2vec_dim=args.dim)
 print('Done!')
 
 print('Compiling Keras model...', end='')
