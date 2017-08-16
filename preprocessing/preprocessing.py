@@ -222,7 +222,7 @@ class Preprocessor(object):
 
     def worker(self, arr):
         vectorizer = Vectorizer(w2v_path=self.w2v_path, extra=True, use=self.use, use_qc=self.use_qc)
-        return [vectorizer.to_vector(sample) for sample in tqdm(arr)]
+        return [vectorizer.to_vector(sample) for sample in arr]
 
     def preprocess(self, samples):
         if len(samples) < 100:
@@ -231,7 +231,7 @@ class Preprocessor(object):
             chunked = chunks(samples, round(len(samples) / self.cpus))
             p = Pool(self.cpus)
             nested_list = p.map(self.worker, chunked)
-            samples = [val for sublist in nested_list for val in sublist]
+            samples = [val for sublist in nested_list for val in sublist if val is not None]
 
         # Transpose
         data = [[[], []],
