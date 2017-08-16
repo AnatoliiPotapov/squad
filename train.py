@@ -86,7 +86,7 @@ class PastalogLogger(Callback):
         self.display = display
         self.model_name = model_name
         self.log = log
-        self.url = 'http://ipavlov.anatolypotapov.com'
+        self.url = 'http://ipavlov.anatolypotapov.com/data'
         self.batch_num = 0
 
     def on_batch_end(self, batch, logs={}):
@@ -115,6 +115,6 @@ model.fit_generator(generator=train_data_gen,
                     callbacks=[
                         ModelCheckpoint(path, verbose=1, save_best_only=True),
                         NBatchLogger(10),
-                        PastalogLogger(10, 'http://34.232.73.156:8120/', log='loss')
+                        PastalogLogger(10, log='loss')
                     ])
 print('Done!')
