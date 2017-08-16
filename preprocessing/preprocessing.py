@@ -53,11 +53,11 @@ class FeatureDict(object):
 
     def save(self):
         with open('../data/feature_dict.pkl', 'wb') as fd:
-            pickle.dump(self.dict, fd)
+            pickle.dump(self.feature_dictdict, fd)
 
     def load(self):
         with open('../data/feature_dict.pkl', 'rb') as f:
-            self.dict = pickle.load(f, encoding='iso-8859-1')
+            self.feature_dict = pickle.load(f, encoding='iso-8859-1')
 
     def renumerate(self):
         keys = list(self.dict.keys())
