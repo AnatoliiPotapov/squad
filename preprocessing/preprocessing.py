@@ -61,8 +61,8 @@ class FeatureDict(object):
 
     def renumerate(self):
         keys = list(self.feature_dict.keys())
-        self.feature_dictdict = {}
-        for key in keys: self.feature_dictdict[key] = len(self.feature_dict)
+        self.feature_dict = {}
+        for key in keys: self.feature_dict[key] = len(self.feature_dict)
 
 class Vectorizer(object):
 
@@ -217,9 +217,13 @@ class Preprocessor(object):
     def __init__(self, w2v_path, use, use_qc, cpus=4, need_answers=True):
         self.vectorizer = Vectorizer(feature_dict=FeatureDict(), w2v_path=w2v_path, extra = True, use=use, use_qc = use_qc)
         self.cpus = cpus
+        self.use = use
+        self.w2v_path = w2v_path
+        self.use_qc = use_qc
 
     def worker(self, arr):
-        return [self.vectorizer.to_vector(sample) for sample in arr]
+        vectorizer = Vectorizer(feature_dict=FeatureDict(), w2v_path=self.w2v_path, extra=True, use=self.use, use_qc=self.use_qc)
+        return [vectorizer.to_vector(sample) for sample in arr]
 
     def preprocess(self, samples):
 
