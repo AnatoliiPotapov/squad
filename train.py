@@ -89,6 +89,9 @@ class PastalogLogger(Callback):
         self.url = 'http://ipavlov.anatolypotapov.com/data'
         self.batch_num = 0
 
+    def post(self):
+        pass
+
     def on_batch_end(self, batch, logs={}):
         self.seen += logs.get('size', 0)
         if self.seen % self.display == 0:

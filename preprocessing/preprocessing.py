@@ -230,13 +230,9 @@ class Preprocessor(object):
         else:
             chunked = chunks(samples, round(len(samples) / self.cpus))
             p = Pool(self.cpus)
-
-
             nested_list = p.map(self.worker, chunked)
-            print(len(nested_list))
-            print(len(nested_list[0][1][0]))
             samples = [val for sublist in nested_list for val in sublist if val is not None]
-            print(len(samples[1][0]))
+            
         # Transpose
         data = [[[], []],
                 [[], []]]

@@ -51,6 +51,11 @@ class FastQA(Model):
             wiqout = K.tf.expand_dims(K.tf.stack(slice, axis=1), 2)
             return wiqout
 
+        '''Word in question soft alignment'''
+
+        def wiq_feature_soft(P,Q):
+            pass
+
         wiq_p = Lambda(lambda arg: wiq_feature(arg[0], arg[1]))([P, Q])
         wiq_q = Lambda(lambda q: K.tf.ones([K.tf.shape(Q)[0], M, 1], dtype=K.tf.float32))(Q)
 
