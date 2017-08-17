@@ -101,7 +101,10 @@ class PastalogLogger(Callback):
                        "globalStep": self.batch_num}
 
             self.batch_num+=1
-            r = requests.post(self.url, json=payload)
+            try:
+                r = requests.post(self.url, json=payload)
+            except:
+                pass
 
     def on_epoch_end(self, epoch, logs=None):
         pass

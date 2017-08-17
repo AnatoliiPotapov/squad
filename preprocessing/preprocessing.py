@@ -66,7 +66,7 @@ class FeatureDict(object):
 
 class Vectorizer(object):
 
-    def __init__(self, w2v_path, extra = True, use='pos, ner, wiq, tf, is_question', use_qc = (True, False)):
+    def __init__(self, w2v_path, extra = True, use='pos, ner, wiq, tf, is_question', use_qc = (True, True)):
         self.word_vector = word2vec(w2v_path)
         self.dict = FeatureDict()
         self.use = use
@@ -214,14 +214,15 @@ def chunks(l, n):
 
 class Preprocessor(object):
 
-    def __init__(self, w2v_path, use, use_qc, cpus=4, need_answers=True):
+    def __init__(self, w2v_path, use, use_qc, extra, cpus=4, need_answers=True):
         self.cpus = cpus
         self.use = use
         self.w2v_path = w2v_path
         self.use_qc = use_qc
+        self.extra = extra
 
     def worker(self, arr):
-        vectorizer = Vectorizer(w2v_path=self.w2v_path, extra=False, use=self.use, use_qc=self.use_qc)
+        vectorizer = Vectorizer(w2v_path=self.w2v_path, extra=self.extra, use=self.use, use_qc=self.use_qc)
         return [vectorizer.to_vector(sample) for sample in arr]
 
     def preprocess(self, samples):
@@ -232,7 +233,7 @@ class Preprocessor(object):
             p = Pool(self.cpus)
             nested_list = p.map(self.worker, chunked)
             samples = [val for sublist in nested_list for val in sublist if val is not None]
-            
+
         # Transpose
         data = [[[], []],
                 [[], []]]
@@ -254,6 +255,7 @@ if __name__ == '__main__':
                         help='Desired path to output pickle')
     parser.add_argument('--data', type=str, help='Data json')
     parser.add_argument('--use', default='pos, ner, wiq, tf', help='Which additional features to use', type=str)
+    parser.add_argument('--extra', default=[1, 1], help='Usage of additional features in question and in context', type=int, nargs='+')
 
     args = parser.parse_args()
 
@@ -277,7 +279,7 @@ if __name__ == '__main__':
         cpus = 2  # arbitrary default
 
     print('Processing SQuAD data... ', end='')
-    prepro = Preprocessor(w2v_path=args.word2vec_path, cpus=cpus, use=args.use, use_qc=(True, True))
+    prepro = Preprocessor(w2v_path=args.word2vec_path, cpus=cpus, use=args.use, use_qc=args.extra, extra=(args.extra[0] or args.extra[1]))
     data = prepro.preprocess(samples)
     print('Done!')
 
