@@ -183,10 +183,10 @@ class Vectorizer(object):
 
         if self.extra:
             context_extra, question_exta = self.extra_features(sample)
-        if self.use_qc[0]:
-            context_vecs = np.hstack((context_vecs, context_extra))
-        if self.use_qc[1]:
-            question_vecs = np.hstack((question_vecs, question_exta))
+            if self.use_qc[0]:
+                context_vecs = np.hstack((context_vecs, context_extra))
+            if self.use_qc[1]:
+                question_vecs = np.hstack((question_vecs, question_exta))
 
         if need_answer:
 
