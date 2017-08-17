@@ -256,7 +256,6 @@ if __name__ == '__main__':
     parser.add_argument('--data', type=str, help='Data json')
     parser.add_argument('--use', default='pos, ner, wiq, tf', help='Which additional features to use', type=str)
     parser.add_argument('--extra', default=[1, 1], help='Usage of additional features in question and in context', type=int, nargs='+')
-    parser.add_argument('--extra', default=[1, 1], help='Usage of additional features in question and in context', type=int, nargs='+')
     parser.add_argument('--cpu', default=10, help='Number of processes', type=int)
 
     args = parser.parse_args()
@@ -282,7 +281,7 @@ if __name__ == '__main__':
 
     if args.cpu:
         cpus = args.cpu
-        
+
     print('Processing SQuAD data... ', end='')
     prepro = Preprocessor(w2v_path=args.word2vec_path, cpus=cpus, use=args.use, use_qc=args.extra, extra=(args.extra[0] or args.extra[1]))
     data = prepro.preprocess(samples)
