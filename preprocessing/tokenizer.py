@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     for i, sample in enumerate(test_data):
         sample['question_tokens'] = tokenized_questions[i]
-        sample['context_tokens'] = tokenized_questions[i]
+        sample['context_tokens'] = tokenized_contexts[i]
 
     if not args.outfile==None:
         with open(args.outfile, 'w') as fd:
